@@ -8,13 +8,12 @@ from urllib.request import urlretrieve
 import warnings
 
 warnings.simplefilter(action='ignore')
-
 czas = datetime.now().strftime("%Y%m%d %H-%M-%S")
 
 # pobieranie wykazu
 
 os.chdir('src')
-nazwa_wykaz = 'irmir-wykaz-gtfs-tmp-2'
+nazwa_wykaz = 'irmir-wykaz-gtfs-prod'
 wykaz = pd.read_excel(nazwa_wykaz + '.xlsx', sheet_name=None)
 wykaz = wykaz.get(list(wykaz.keys())[0])
 wykaz = wykaz.dropna()
@@ -61,10 +60,8 @@ for el in lst_gtfs:
     os.chdir(el)
     print('Scalam GTFS dla: ', el)
     tmp_stops = pd.read_csv('stops.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    print('stops')
     tmp_stops = tmp_stops[['stop_id', 'stop_name', 'stop_lat', 'stop_lon']]
     tmp_routes = pd.read_csv('routes.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    print('routes')
     if 'agency_id' in tmp_routes.columns.tolist():
         tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
     else:
@@ -72,10 +69,8 @@ for el in lst_gtfs:
         tmp_routes['agency_id'] = el
         tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
     tmp_trips = pd.read_csv('trips.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    print('trips')
     tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign']]
     tmp_agency = pd.read_csv('agency.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    print('agency')
     if 'agency_id' in tmp_agency.columns.tolist():
         tmp_agency = tmp_agency[['agency_id','agency_name','agency_url','agency_timezone']]
         tmp_agency.agency_url = 'https://irmir.pl/'
@@ -85,7 +80,6 @@ for el in lst_gtfs:
         tmp_agency = tmp_agency[['agency_id','agency_name','agency_url','agency_timezone']]
         tmp_agency.agency_url = 'https://irmir.pl/'
     tmp_stop_times = pd.read_csv('stop_times.txt', dtype={"trip_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    print('stop_times')
     tmp_stop_times = tmp_stop_times[['trip_id','arrival_time','departure_time','stop_id','stop_sequence']]
     if (os.path.isfile('calendar_dates.txt')):
         bool_caldates = True
