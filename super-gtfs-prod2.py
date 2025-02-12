@@ -68,7 +68,7 @@ for el in lst_gtfs:
         tmp_routes = tmp_routes[['route_id', 'route_short_name', 'route_long_name', 'route_type']]
         tmp_routes['agency_id'] = el
         tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
-    tmp_trips = pd.read_csv('trips.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+    tmp_trips = pd.read_csv('trips.txt', dtype={"trip_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
     tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign']]
     tmp_agency = pd.read_csv('agency.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
     if 'agency_id' in tmp_agency.columns.tolist():
