@@ -44,17 +44,18 @@ for i in range(0, len(wykaz)):
 ## nowe tabele
 new_stops = pd.DataFrame(columns=['stop_id', 'stop_name', 'stop_lat', 'stop_lon'])
 new_routes = pd.DataFrame(columns=['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type'])
-new_trips = pd.DataFrame(columns=['route_id', 'service_id', 'trip_id', 'trip_headsign'])
+new_trips = pd.DataFrame(columns=['route_id', 'service_id', 'trip_id', 'trip_headsign', 'shape_id'])
 new_agency = pd.DataFrame(columns=['agency_id', 'agency_name','agency_url','agency_timezone'])
 new_stop_times = pd.DataFrame(columns=['trip_id','arrival_time','departure_time','stop_id','stop_sequence'])
 new_calendar_dates = pd.DataFrame(columns=['service_id' ,'date', 'exception_type'])
 new_calendar = pd.DataFrame(columns=['service_id','monday','tuesday','wednesday','thursday','friday','saturday','sunday','start_date','end_date'])
+new_shapes = pd.DataFrame(columns=['shape_id','shape_pt_lat','shape_pt_lon','shape_pt_sequence'])
 
 ## wyciaganie danych z istniejecych gtfs i scalanie do jednego pliku
 lst_gtfs = next(os.walk('.'))[1]
 bool_cal = False
 bool_caldates = False
-
+bool_shp = False
 
 for el in lst_gtfs:
     os.chdir(el)
@@ -68,11 +69,10 @@ for el in lst_gtfs:
         tmp_routes = tmp_routes[['route_id', 'route_short_name', 'route_long_name', 'route_type']]
         tmp_routes['agency_id'] = el
         tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
-    tmp_trips = pd.read_csv('trips.txt', dtype={"trip_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-    tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign']]
     tmp_agency = pd.read_csv('agency.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
     if 'agency_id' in tmp_agency.columns.tolist():
         tmp_agency = tmp_agency[['agency_id','agency_name','agency_url','agency_timezone']]
+        tmp_agency['agency_id'] = el # czy na pewno potrzebne
         tmp_agency.agency_url = 'https://irmir.pl/'
     else:
         tmp_agency = tmp_agency[['agency_name','agency_url','agency_timezone']]
@@ -90,8 +90,21 @@ for el in lst_gtfs:
         tmp_calendar = pd.read_csv('calendar.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         tmp_calendar = tmp_calendar[['service_id','monday','tuesday','wednesday','thursday','friday','saturday','sunday','start_date','end_date']]
 
+    tmp_trips = pd.read_csv('trips.txt', dtype={"trip_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+    if (os.path.isfile('shapes.txt')):
+        bool_shp = True
+        tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign', 'shape_id']]
+        tmp_shapes = pd.read_csv('shapes.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+        tmp_shapes = tmp_shapes[['shape_id','shape_pt_lat','shape_pt_lon','shape_pt_sequence']]
+    else:
+        tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign']]
+        tmp_trips['shape_id'] = ''
+
+
     ### filtrowanie
+    #### tylko trasy kolejowe (czyli route_type = 2)
     tmp_routes = tmp_routes[tmp_routes.route_type == 2]
+    #### specjalnie dla SKM Warszawa wyfiltrowanie tras SKM z pliku dla ZTMu Waw.
     if el=='SKMW':
         tmp_routes['coltmp'] = tmp_routes.route_short_name.astype(str).str[0]
         tmp_routes = tmp_routes[tmp_routes.coltmp == 'S']
@@ -115,6 +128,9 @@ for el in lst_gtfs:
         tmp_calendar_dates.service_id = el + tmp_calendar_dates.service_id.astype(str)
     if bool_cal:
         tmp_calendar.service_id = el + tmp_calendar.service_id.astype(str)
+    if bool_shp:
+        tmp_trips.shape_id = el + tmp_trips.shape_id.astype(str)
+        tmp_shapes.shape_id = el + tmp_shapes.shape_id.astype(str)
 
     ### scalanie z główna tabelą
     new_stops = pd.concat([new_stops, tmp_stops])
@@ -126,11 +142,14 @@ for el in lst_gtfs:
         new_calendar_dates = pd.concat([new_calendar_dates, tmp_calendar_dates])
     if bool_cal:
         new_calendar = pd.concat([new_calendar, tmp_calendar])
+    if bool_shp:
+        new_shapes = pd.concat([new_shapes, tmp_shapes])
 
     print('=== scalone ===')
 
     bool_cal = False
     bool_caldates = False
+    bool_shp = False
     os.chdir('..')
 
 
@@ -192,6 +211,8 @@ new_calendar.to_csv('calendar.txt', index = False)
 print('Wygenerowano: calendar')
 new_calendar_dates.to_csv('calendar_dates.txt', index = False)
 print('Wygenerowano: calendar_dates')
+new_shapes.to_csv('shapes.txt', index = False)
+print('Wygenerowano: shapes')
 
 lista_pl_sklad = os.listdir()
 
