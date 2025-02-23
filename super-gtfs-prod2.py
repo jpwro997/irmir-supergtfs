@@ -64,6 +64,10 @@ for el in lst_gtfs:
     tmp_stops = tmp_stops[['stop_id', 'stop_name', 'stop_lat', 'stop_lon']]
     tmp_routes = pd.read_csv('routes.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
     tmp_agency = pd.read_csv('agency.txt').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+    ### sprawdzanie, w jaki sposób są określone w plikach źródłowych zależności między agency i obsługiwanymi przez nie routes
+    #### opcja 1: brak agency_id
+    #### opcja 2: jest agency_id w tabeli agency, nie ma w routes
+    #### opcja 3 optymalna: jest agency_id zarówno w agency, jak i w routes (obowiązkowo przy wielu operatorach, jak np. GTFS dla ZTM Warszawa)
     if 'agency_id' in tmp_routes.columns.tolist():
         tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
         if 'agency_id' in tmp_agency.columns.tolist():
@@ -90,15 +94,6 @@ for el in lst_gtfs:
             tmp_routes = tmp_routes[['route_id', 'route_short_name', 'route_long_name', 'route_type']]
             tmp_routes['agency_id'] = el
             tmp_routes = tmp_routes[['route_id', 'agency_id', 'route_short_name', 'route_long_name', 'route_type']]
-    # if 'agency_id' in tmp_agency.columns.tolist():
-    #     tmp_agency = tmp_agency[['agency_id','agency_name','agency_url','agency_timezone']]
-    #     #tmp_agency['agency_id'] = el # czy na pewno potrzebne
-    #     tmp_agency.agency_url = 'https://irmir.pl/'
-    # else:
-    #     tmp_agency = tmp_agency[['agency_name','agency_url','agency_timezone']]
-    #     tmp_agency['agency_id'] = el
-    #     tmp_agency = tmp_agency[['agency_id','agency_name','agency_url','agency_timezone']]
-    #     tmp_agency.agency_url = 'https://irmir.pl/'
     tmp_stop_times = pd.read_csv('stop_times.txt', dtype={"trip_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
     tmp_stop_times = tmp_stop_times[['trip_id','arrival_time','departure_time','stop_id','stop_sequence']]
     if (os.path.isfile('calendar_dates.txt')):
@@ -111,10 +106,10 @@ for el in lst_gtfs:
         tmp_calendar = tmp_calendar[['service_id','monday','tuesday','wednesday','thursday','friday','saturday','sunday','start_date','end_date']]
 
     tmp_trips = pd.read_csv('trips.txt', dtype={"trip_id": "string", "shape_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+    ### sprawdzanie, czy są shapes i czy nie jest to dummy file (KMŁ tak ma)
     if (os.path.isfile('shapes.txt')):
         tmp_shapes = pd.read_csv('shapes.txt', dtype={"shape_id": "string"}).apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         tmp_shapes = tmp_shapes[['shape_id','shape_pt_lat','shape_pt_lon','shape_pt_sequence']]
-        print(len(tmp_shapes))
         if (len(tmp_shapes)>0):
             bool_shp = True
             tmp_trips = tmp_trips[['route_id', 'service_id', 'trip_id', 'trip_headsign', 'shape_id']]
