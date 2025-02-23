@@ -1,1 +1,1 @@
-inicjalizacja katalogu ;)
+inicjalizacja katalogu - ten plik nic nie robi poza tym ;)
